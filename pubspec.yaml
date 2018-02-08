@@ -1,0 +1,10 @@
+name: crypto_wallet
+description: Create portable crypto wallets using seeds.
+version: 0.0.1
+author: kabiir
+homepage: https://github.com/kabiir/crypto_wallet
+
+dependencies:
+  pointycastle: "^0.11.1"
+dev_dependencies:
+  test: ^0.12.0
