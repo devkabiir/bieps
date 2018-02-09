@@ -1,5 +1,5 @@
-name: crypto_wallet
-description: Create portable crypto wallets using seeds.
+name: dther
+description: Ethereum implementaion in dart
 version: 0.0.1
 author: kabiir
 homepage: https://github.com/kabiir/crypto_wallet
