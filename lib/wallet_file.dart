@@ -1,4 +1,4 @@
-import 'package:crypto_wallet/wallet_utils.dart';
+import 'package:dther/wallet_utils.dart';
 
 /// Ethereum wallet file.
 class WalletFile {
