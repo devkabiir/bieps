@@ -21,25 +21,17 @@ class BIP39 {
   ///
   static Uint8List generateSeed(String mnemonic, [String passphrase]) {
     final String salt = 'mnemonic${passphrase ?? ''}';
-    print(salt);
+    print('Mnemonic: $mnemonic');
+    print('Salt: $salt');
 
-    ///     _seedIterations = 2048;
-    ///     _seedKeySize = 64;
-    final Pbkdf2Parameters params = new Pbkdf2Parameters(createUint8ListFromString(salt), 2048, 64);
-
-    /// Using mirrors for everything
-    final KeyDerivator gen = new KeyDerivator('SHA-512/HMAC/PBKDF2')..init(params);
-
-    /// Using mirross for hmac only
-    final Mac hmac2 = new Mac('SHA-512/HMAC');
-    final PBKDF2KeyDerivator gen2 = new PBKDF2KeyDerivator(hmac2)..init(params);
+    final Pbkdf2Parameters params =
+        new Pbkdf2Parameters(createUint8ListFromString(salt), _seedIterations, _seedKeySize);
 
     /// Without mirrors (flutter)
     ///     HMac._DIGEST_BLOCK_LENGTH['SHA-512'] = 128
-    ///     HMac(Digest _digest, int _blockLength)
-    final HMac hmac3 = new HMac(new SHA512Digest(), 128)..reset();
-    final PBKDF2KeyDerivator gen3 = new PBKDF2KeyDerivator(hmac3)..init(params);
-    return gen3.process(createUint8ListFromString(mnemonic));
+    final HMac hmanSha512 = new HMac(new SHA512Digest(), 128)..reset();
+    final PBKDF2KeyDerivator gen = new PBKDF2KeyDerivator(hmanSha512)..init(params);
+    return gen.process(createUint8ListFromString(mnemonic));
   }
 }
 
