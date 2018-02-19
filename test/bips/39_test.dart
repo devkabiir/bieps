@@ -3,9 +3,7 @@ import 'dart:typed_data';
 
 import 'package:test/test.dart';
 
-import 'package:dther/bips/bip39.dart';
-
-import '../lib/crypto/helpers.dart';
+import '../../lib/bieps.dart';
 
 void main() {
   test('BIP39 generate mnemonic', () {

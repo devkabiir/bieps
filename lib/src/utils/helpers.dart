@@ -1,6 +1,6 @@
 /// Copied from pointycastle/test/src/helpers.dart;
 
-library bieps.crypto;
+library bieps.util.helperss;
 
 import 'dart:typed_data';
 

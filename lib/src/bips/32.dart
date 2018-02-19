@@ -1,5 +1,4 @@
-
-
+library bieps.bips.bip32;
 
 class BIP32 {
 

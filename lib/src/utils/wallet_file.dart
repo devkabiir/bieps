@@ -1,6 +1,9 @@
-import 'package:dther/wallet_utils.dart';
+library bieps.utils.wallet_file;
+
+import 'helpers.dart';
 
 /// Ethereum wallet file.
+/// This holds the private key, public address and can sign arbitrary data.
 class WalletFile {
   String _address;
   Crypto _crypto;
@@ -8,7 +11,7 @@ class WalletFile {
   int _version;
 
   bool operator ==(dynamic other) {
-    other = GetVal(other, WalletFile);
+    other = getValIfmatch(other, WalletFile);
 
     if (_address != other._address) {
       return false;

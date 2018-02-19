@@ -1,10 +1,12 @@
-import 'dart:core';
+library bieps.bips.bip39;
+
 import 'dart:typed_data';
-import 'package:pointycastle/pointycastle.dart';
-import 'package:pointycastle/export.dart';
-import '../crypto/helpers.dart';
+import 'package:pointycastle/digests/sha512.dart';
+import 'package:pointycastle/key_derivators/api.dart';
+import 'package:pointycastle/key_derivators/pbkdf2.dart';
+import 'package:pointycastle/macs/hmac.dart';
+import '../utils/utils.dart';
 import 'en-mnemonic-word-list.dart';
-import 'dart:convert';
 
 /// Used for generating 12-24 words which can be then be converted to 512-bit seed
 class BIP39 {
