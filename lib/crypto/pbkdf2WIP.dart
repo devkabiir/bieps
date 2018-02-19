@@ -1,16 +1,7 @@
 import 'dart:convert';
-// import 'package:crypto/crypto.dart';
-// import 'package:crypto/src/digest.dart';
-// import 'package:crypto/src/hmac.dart';
-// import 'package:crypto/src/hash.dart';
 import 'dart:typed_data';
-import 'package:pointycastle/api.dart';
-import 'package:pointycastle/macs/hmac.dart';
-import 'package:pointycastle/digests/sha512.dart';
-import 'package:pointycastle/digests/sha256.dart';
+import 'package:pointycastle/export.dart';
 import 'helpers.dart';
-import 'package:pointycastle/key_derivators/pbkdf2.dart';
-import 'package:pointycastle/key_derivators/api.dart';
 
 /// Password Based Key Derivation Function 2
 /// Reference https://tools.ietf.org/html/rfc2898#page-9
@@ -67,7 +58,7 @@ class PBKDF2 {
     ///  Here, INT (i) is a four-octet encoding of the integer i, most
     ///    significant octet first.
     final List<int> blocks = <int>[];
-    for (int i = 0; i <= numberOfBlocks; i++) {
+    for (int i = 1; i <= numberOfBlocks; ++i) {
       final List<int> block = _computeBlock(password, salt, iterations, i);
       if (i < numberOfBlocks) {
         blocks.addAll(block);
@@ -90,30 +81,72 @@ class PBKDF2 {
   }
 
   List<int> _computeBlock(String password, String salt, int iterations, int blockNumber) {
-    /// password P and the concatenation of the salt S and the block index i:
-
-    final List<int> inputForPrf = password.codeUnits;
-    inputForPrf.addAll(salt.codeUnits);
-    final Uint8List key = new Uint8List.fromList(inputForPrf);
+    /// PRF is applied to thepassword P and the concatenation of
+    /// the salt S and the block index i:
+    /// Key is the password and Message is salt
+    final Uint8List saltBytes = new Uint8List.fromList(createUint8ListFromString(salt));
+    final Uint8List key = new Uint8List.fromList(createUint8ListFromString(password));
     final KeyParameter keyParam = new KeyParameter(key);
-    final HMac hmac = new HMac(_hash, password.codeUnits.length);
-    hmac.init(keyParam);
-    return null;
+
+    ///     U_1 = PRF (P, S || INT (i))
+    /// Apply PRF on password and (salt and index i)
+    /// here either the length is 64(bytes) or 512(bits)
+    HMac hmac = new HMac(_hash, 64)..init(keyParam);
+
+    /// Concatenate salt and INT (i)
+    /// Here, INT (i) is a four-octet encoding of the integer i, most
+    /// significant octet first
+    /// FIXME:
+    Uint8List message = saltBytes;
+    message = _writeBlockNumber(message, blockNumber);
+
+    /// firstBlock represents :
+    ///     U_1
+    final List<int> firstBlock = hmac.process(message).toList();
+    Uint8List lastDigest = new Uint8List.fromList(firstBlock);
+    final List<int> result = new List<int>.from(firstBlock);
+
+    ///       U_2 = PRF (P, U_1) ,
+    ///       ...
+    ///       U_c = PRF (P, U_{c-1}) .
+    for (int i = 0; i < iterations; i++) {
+      hmac = new HMac(_hash, 64)..init(keyParam);
+      final List<int> newDigest = hmac.process(lastDigest).toList();
+
+      ///     U_1 \xor U_2 \xor ... \xor U_c
+      _xorLists(result, newDigest);
+
+      lastDigest = new Uint8List.fromList(newDigest);
+    }
+
+    return result;
+  }
+
+  void _xorLists(List<int> list1, List<int> list2) {
+    for (int i = 0; i < list1.length; i++) {
+      list1[i] = list1[i] ^ list2[i];
+    }
+  }
+
+  Uint8List _writeBlockNumber(Uint8List message, int blockNumber) {
+    final List<int> newMessage = message.toList();
+    _blockList[0] = blockNumber >> 24;
+    _blockList[1] = blockNumber >> 16;
+    _blockList[2] = blockNumber >> 8;
+    _blockList[3] = blockNumber;
+    newMessage.addAll(_blockList);
+    return new Uint8List.fromList(newMessage);
   }
 }
 
 void main() {
   final String password = '';
   final String salt = 'mnemonic$password';
-  final List<int> inputForPrf = password.codeUnits;
-  inputForPrf.addAll(salt.codeUnits);
-  final Uint8List key = new Uint8List.fromList(inputForPrf);
-  final KeyParameter keyParam = new KeyParameter(key);
-  final HMac hmac = new HMac(new SHA256Digest(), password.codeUnits.length);
-  hmac.init(keyParam);
-  // final PBKDF2 p = new PBKDF2(new SHA256Digest());
-  // print(formatBytesAsHexString(new Uint8List.fromList(p.deriveKey(password, salt, 2048, 512))));
+  final int iterations = 2048;
+  final int dLen = 64;
+  final PBKDF2 gen = new PBKDF2(new SHA256Digest());
+  final List<int> out = gen.deriveKey(password, salt, iterations, dLen);
+  print(formatBytesAsHexString(new Uint8List.fromList(out)));
 
-  PBKDF2KeyDerivator pp = new PBKDF2KeyDerivator(hmac);
-  pp.init(params)
+  // pp.init(params)
 }

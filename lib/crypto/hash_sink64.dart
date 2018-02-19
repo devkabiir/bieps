@@ -1,14 +1,10 @@
-// Copyright (c) 2012, the Dart project authors.  Please see the AUTHORS file
-// for details. All rights reserved. Use of this source code is governed by a
-// BSD-style license that can be found in the LICENSE file.
-
-// Constants.
-
+import 'dart:math';
 import 'dart:typed_data';
 import 'package:crypto/src/utils.dart';
 import 'package:crypto/src/digest.dart';
 import 'package:typed_data/typed_buffers.dart';
 
+// Constants.
 /// A bitmask that limits an integer to 32 bits.
 const int mask8 = 0xff;
 
@@ -20,7 +16,7 @@ const int bytesPerWord64 = 8;
 
 /// A base class for [Sink] implementations for hash algorithms.
 ///
-/// Subclasses should override [updateHash] and [digest].
+/// Subclasses should override [updateHash] and [digestH].
 abstract class HashSink64 implements Sink<List<int>> {
   /// The inner sink that this should forward to.
   final Sink<Digest> _sink;
@@ -49,6 +45,11 @@ abstract class HashSink64 implements Sink<List<int>> {
 
   int _chunkSizeInWords;
 
+  /// The words in the current digest.
+  ///
+  /// This should be updated each time [updateHash] is called.
+  Uint64List get digestH;
+
   /// Creates a new hash.
   ///
   /// [chunkSizeInWords] represents the size of the input chunks processed by
@@ -58,12 +59,7 @@ abstract class HashSink64 implements Sink<List<int>> {
         _currentChunk = new Uint64List(chunkSizeInWords),
         _chunkSizeInWords = chunkSizeInWords;
 
-  /// The words in the current digest.
-  ///
-  /// This should be updated each time [updateHash] is called.
-  Uint64List get digest;
-
-  /// Runs a single iteration of the hash computation, updating [digest] with
+  /// Runs a single iteration of the hash computation, updating [digestH] with
   /// the result.
   ///
   /// [chunk] is the current chunk, whose size is given by the
@@ -97,13 +93,13 @@ abstract class HashSink64 implements Sink<List<int>> {
 
   Uint8List _byteDigest() {
     if (_endian == Endianness.HOST_ENDIAN) {
-      return digest.buffer.asUint8List();
+      return digestH.buffer.asUint8List();
     }
 
-    final Uint8List byteDigest = new Uint8List(digest.lengthInBytes);
+    final Uint8List byteDigest = new Uint8List(digestH.lengthInBytes);
     final ByteData byteData = byteDigest.buffer.asByteData();
-    for (int i = 0; i < digest.length; i++) {
-      byteData.setUint64(i * bytesPerWord64, digest[i]);
+    for (int i = 0; i < digestH.length; i++) {
+      byteData.setUint64(i * bytesPerWord64, digestH[i]);
     }
     return byteDigest;
   }
@@ -131,45 +127,47 @@ abstract class HashSink64 implements Sink<List<int>> {
   ///
   /// This adds a 1 bit to the end of the message, and expands it with 0 bits to
   /// pad it out.
-  // void _finalizeData() {
-  //   // Pad out the data with 0x80, eight 0s, and as many more 0s as we need to
-  //   // land cleanly on a chunk boundary.
-  //   _pendingData.add(0x80);
-  //   final int contentsLength = _lengthInBytes + 9;
-  //   final int finalizedLength = _roundUp(contentsLength, _currentChunk.lengthInBytes);
-  //   for (int i = 0; i < finalizedLength - contentsLength; i++) {
-  //     _pendingData.add(0);
-  //   }
-
-  //   if (_lengthInBytes > _maxMessageLengthInBytes) {
-  //     throw new UnsupportedError('Hashing is unsupported for messages with more than 2^64 bits.');
-  //   }
-
-  //   final int lengthInBits = _lengthInBytes * bitsPerByte;
-
-  //   // Add the full length of the input data as a 64-bit value at the end of the
-  //   // hash.
-  //   final int offset = _pendingData.length;
-  //   _pendingData.addAll(new Uint8List(8));
-  //   final ByteData byteData = _pendingData.buffer.asByteData();
-
-  //   // We're essentially doing byteData.setUint64(offset, lengthInBits, _endian)
-  //   // here, but that method isn't supported on dart2js so we implement it
-  //   // manually instead.
-  //   final int highBits = lengthInBits >> 32;
-  //   final int lowBits = lengthInBits & mask32;
-  //   if (_endian == Endianness.BIG_ENDIAN) {
-  //     byteData..setUint32(offset, highBits, _endian)..setUint32(offset + bytesPerWord, lowBits, _endian);
-  //   } else {
-  //     byteData..setUint32(offset, lowBits, _endian)..setUint32(offset + bytesPerWord, highBits, _endian);
-  //   }
-  //   _pendingData..clear();
-  //   for (int i = 0; i < byteData.lengthInBytes; i++) {
-  //     _pendingData.add(byteData.getUint8(i));
-  //   }
-  // }
-
   void _finalizeData() {
+    // Pad out the data with 0x80, eight 0s, and as many more 0s as we need to
+    // land cleanly on a chunk boundary.
+    _pendingData.add(0x80);
+    final int contentsLength = _lengthInBytes + 9;
+    final int finalizedLength = _roundUp(contentsLength, _currentChunk.lengthInBytes);
+    for (int i = 0; i < finalizedLength - contentsLength; i++) {
+      _pendingData.add(0);
+    }
+
+    if (_lengthInBytes > _maxMessageLengthInBytes) {
+      throw new UnsupportedError('Hashing is unsupported for messages with more than 2^64 bits.');
+    }
+
+    final int lengthInBits = _lengthInBytes * bitsPerByte;
+    assert(lengthInBits < pow(2, 64));
+    // Add the full length of the input data as a 64-bit value at the end of the
+    // hash.
+    final int offset = _pendingData.length;
+    _pendingData.addAll(new Uint8List(8));
+    final ByteData byteData = _pendingData.buffer.asByteData();
+
+    // We're essentially doing byteData.setUint64(offset, lengthInBits, _endian)
+    // here, but that method isn't supported on dart2js so we implement it
+    // manually instead.
+    // final int highBits = lengthInBits >> 32;
+    // final int lowBits = lengthInBits & mask32;
+    // if (_endian == Endianness.BIG_ENDIAN) {
+    //   byteData..setUint32(offset, highBits, _endian)..setUint32(offset + bytesPerWord, lowBits, _endian);
+    // } else {
+    //   byteData..setUint32(offset, lowBits, _endian)..setUint32(offset + bytesPerWord, highBits, _endian);
+    // }
+    // _pendingData..clear();
+    // for (int i = 0; i < byteData.lengthInBytes; i++) {
+    //   _pendingData.add(byteData.getUint8(i));
+    // }
+    // byteData.setUint64(offset, lengthInBits);
+    byteData.setUint64(offset, lengthInBits, _endian);
+  }
+
+  void _finalizeData2() {
     _pendingData.add(0x80);
     final int contentsLength = _lengthInBytes + 17;
     final int chunkSizeInBytes = _chunkSizeInWords * bytesPerWord64;

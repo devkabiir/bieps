@@ -5,7 +5,9 @@ import 'package:crypto/crypto.dart';
 import 'package:crypto/src/digest.dart';
 import 'package:crypto/src/hmac.dart';
 import 'package:crypto/src/hash.dart';
+import 'package:pointycastle/export.dart' as pc;
 import 'helpers.dart';
+import 'sha512.dart';
 
 /// Reference https://tools.ietf.org/html/rfc2898#page-9
 class PBKDF2 {
@@ -107,7 +109,14 @@ class SyncChunkedConversionSink extends ChunkedConversionSink<Digest> {
 }
 
 void main() {
+  final String password = '';
+  final String salt = 'mnemonic$password';
+  final int iterations = 2048;
+  final int dLen = 64;
+
   /// Needs sha512
-  final PBKDF2 p = new PBKDF2(sha256.newInstance());
-  print(formatBytesAsHexString(new Uint8List.fromList(p.generateKey('', 'mnemonic', 2048, 512))));
+  final PBKDF2 gen = new PBKDF2(sha256.newInstance());
+  final List<int> out = gen.generateKey(password, salt, iterations, dLen);
+
+  print(formatBytesAsHexString(new Uint8List.fromList(out)));
 }

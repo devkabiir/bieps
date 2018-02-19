@@ -37,7 +37,7 @@ class BIP39 {
 
 void main() {
   final String generatedSeedHex = formatBytesAsHexString(
-      BIP39.generateSeed('legal winner thank year wave sausage worth useful legal winner thank yellow'));
+      BIP39.generateSeed('legal winner thank year wave sausage worth useful legal winner thank yellow', 'TREZOR'));
   print(generatedSeedHex);
   final String expected =
       '2e8905819b8723fe2c1d161860e5ee1830318dbf49a83bd451cfb8440c28bd6fa457fe1296106559a3c80937a1c1069be3a3a5bd381ee6260e8d9739fce1f607';

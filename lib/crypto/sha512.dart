@@ -1,13 +1,13 @@
 import 'dart:convert';
 import 'dart:typed_data';
-// import 'package:crypto/crypto.dart';
-// import 'package:crypto/src/digest.dart';
-// import 'hash_sink64.dart';
-// import 'helpers.dart';
-import 'package:pointycastle/api.dart';
+import 'package:crypto/crypto.dart';
+import 'package:crypto/src/digest.dart';
+import 'hash_sink64.dart';
+import 'helpers.dart';
+// import 'package:pointycastle/api.dart';
 
-import 'package:pointycastle/digests/sha512.dart';
-import 'package:pointycastle/macs/hmac.dart';
+// import 'package:pointycastle/digests/sha512.dart';
+// import 'package:pointycastle/macs/hmac.dart';
 
 // abstract class _SHA384_512Base extends _Hash64Base {
 //   _SHA384_512Base(int resultLengthInWords)
@@ -301,16 +301,16 @@ class _Sha512Sink extends HashSink64 {
    it can be considered to be eight 64-bit words, H(i)0, H(i)1, ..., H(i)7.
   */
   @override
-  final Uint64List digest = new Uint64List(8);
+  final Uint64List digestH = new Uint64List(8);
 
   /// The sixteen words from the original chunk, extended to 64 words.
   ///
   /// This is an instance variable to avoid re-allocating, but its data isn't
   /// used across invocations of [updateHash].
-  final Uint64List _extended;
+  final Uint64List _w;
 
   _Sha512Sink(Sink<Digest> sink)
-      : _extended = new Uint64List(80),
+      : _w = new Uint64List(80),
         super(sink, 16) {
     /*
    For SHA-512, the initial hash value, digest[0], consists of the following
@@ -318,14 +318,14 @@ class _Sha512Sink extends HashSink64 {
    first 64 bits of the fractional parts of the square roots of the
    first eight prime numbers.
   */
-    digest[0] = 0x6a09e667f3bcc908;
-    digest[1] = 0xbb67ae8584caa73b;
-    digest[2] = 0x3c6ef372fe94f82b;
-    digest[3] = 0xa54ff53a5f1d36f1;
-    digest[4] = 0x510e527fade682d1;
-    digest[5] = 0x9b05688c2b3e6c1f;
-    digest[6] = 0x1f83d9abfb41bd6b;
-    digest[7] = 0x5be0cd19137e2179;
+    digestH[0] = 0x6a09e667f3bcc908;
+    digestH[1] = 0xbb67ae8584caa73b;
+    digestH[2] = 0x3c6ef372fe94f82b;
+    digestH[3] = 0xa54ff53a5f1d36f1;
+    digestH[4] = 0x510e527fade682d1;
+    digestH[5] = 0x9b05688c2b3e6c1f;
+    digestH[6] = 0x1f83d9abfb41bd6b;
+    digestH[7] = 0x5be0cd19137e2179;
   }
 
   /// Helper functions as defined in http://tools.ietf.org/html/rfc6234
@@ -346,53 +346,45 @@ class _Sha512Sink extends HashSink64 {
     assert(chunk.length == 16);
     // Prepare message schedule [_extended]:
     for (int i = 0; i < 16; i++) {
-      _extended[i] = chunk[i];
+      _w[i] = chunk[i];
     }
     for (int i = 16; i < 80; i++) {
-      add64(add64(_ssig1(_extended[i - 2]), _extended[i - 7]), add64(_ssig0(_extended[i - 15]), _extended[i - 16]));
+      _add64(_add64(_ssig1(_w[i - 2]), _w[i - 7]), _add64(_ssig0(_w[i - 15]), _w[i - 16]));
     }
     // Initialize the working variables:
-    int a = digest[0];
-    int b = digest[1];
-    int c = digest[2];
-    int d = digest[3];
-    int e = digest[4];
-    int f = digest[5];
-    int g = digest[6];
-    int h = digest[7];
+    int a = digestH[0];
+    int b = digestH[1];
+    int c = digestH[2];
+    int d = digestH[3];
+    int e = digestH[4];
+    int f = digestH[5];
+    int g = digestH[6];
+    int h = digestH[7];
 
     // Perform the main hash computation:
     for (int i = 0; i < 80; i++) {
-      final int temp1 = add64(add64(h, _bsig1(e)), add64(_ch(e, f, g), add64(_noise[i], _extended[i])));
-      final int temp2 = add64(_bsig0(a), _maj(a, b, c));
+      final int temp1 = _add64(_add64(h, _bsig1(e)), _add64(_ch(e, f, g), _add64(_noise[i], _w[i])));
+      final int temp2 = _add64(_bsig0(a), _maj(a, b, c));
       h = g;
       g = f;
       f = e;
-      e = add64(d, temp1);
+      e = _add64(d, temp1);
       d = c;
       c = b;
       b = a;
-      a = add64(temp1, temp2);
+      a = _add64(temp1, temp2);
     }
     // Compute the intermediate hash value digest[i]:
-    digest[0] = add64(a, digest[0]);
-    digest[1] = add64(b, digest[1]);
-    digest[2] = add64(c, digest[2]);
-    digest[3] = add64(d, digest[3]);
-    digest[4] = add64(e, digest[4]);
-    digest[5] = add64(f, digest[5]);
-    digest[6] = add64(g, digest[6]);
-    digest[7] = add64(h, digest[7]);
+    digestH[0] = _add64(a, digestH[0]);
+    digestH[1] = _add64(b, digestH[1]);
+    digestH[2] = _add64(c, digestH[2]);
+    digestH[3] = _add64(d, digestH[3]);
+    digestH[4] = _add64(e, digestH[4]);
+    digestH[5] = _add64(f, digestH[5]);
+    digestH[6] = _add64(g, digestH[6]);
+    digestH[7] = _add64(h, digestH[7]);
   }
 }
 
 /// Adds [x] and [y] with 64-bit overflow semantics.
-int add64(int x, int y) => (x + y) & mask64;
-
-void main() {
-  String test = 'abc';
-  // print(formatBytesAsHexString(createUint8ListFromString(test)));
-  // print(sha512.convert(createUint8ListFromString(test).toList()).bytes.length);
-new HMac(new SHA512Digest(), _blockLength)
-  print(formatBytesAsHexString(new SHA512Digest().process(createUint8ListFromString(test))));
-}
+int _add64(int x, int y) => (x + y) & mask64;
