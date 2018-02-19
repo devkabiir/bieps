@@ -20,19 +20,15 @@ class BIP39 {
     return results;
   }
 
-  ///
+  /// Generates a seed from given [mnemonic] sentence
   static Uint8List generateSeed(String mnemonic, [String passphrase]) {
     final String salt = 'mnemonic${passphrase ?? ''}';
-    print('Mnemonic: $mnemonic');
-    print('Salt: $salt');
 
     final Pbkdf2Parameters params =
         new Pbkdf2Parameters(createUint8ListFromString(salt), _seedIterations, _seedKeySize);
 
-    /// Without mirrors (flutter)
-    ///     HMac._DIGEST_BLOCK_LENGTH['SHA-512'] = 128
-    final HMac hmanSha512 = new HMac(new SHA512Digest(), 128)..reset();
-    final PBKDF2KeyDerivator gen = new PBKDF2KeyDerivator(hmanSha512)..init(params);
+    final HMac hmacSha512 = new HMac(new SHA512Digest(), 128)..reset();
+    final PBKDF2KeyDerivator gen = new PBKDF2KeyDerivator(hmacSha512)..init(params);
     return gen.process(createUint8ListFromString(mnemonic));
   }
 }
