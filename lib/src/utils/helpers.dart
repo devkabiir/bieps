@@ -88,3 +88,9 @@ dynamic getValIfmatch(dynamic value, Type t, {String varName, bool allowNull = f
 
   return value;
 }
+
+/// Converts given [bytes] to a bits string.
+String bytesToBits(Uint8List bytes) => bytes.map((int x) => x.toRadixString(2).padLeft(8, '0')).join();
+
+/// Converts given string of [bits] to an integer
+int bitToByte(String bits) => int.parse(bits, radix: 2);
