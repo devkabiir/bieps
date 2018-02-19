@@ -1,39 +1,34 @@
 /// Copied from pointycastle/test/src/helpers.dart;
-/// // Copyright (c) 2013-present, the authors of the Pointy Castle project
-// This library is dually licensed under LGPL 3 and MPL 2.0.
-// See file LICENSE for more information.
 
-library pointycastle.test.test.src.helpers;
+library bieps.crypto;
 
-import "dart:typed_data";
+import 'dart:typed_data';
 
-import "package:test/test.dart";
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// Format //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-String formatAsTruncated(String str) {
-  if (str.length > 26) {
-    return str.substring(0, 26) + "[...]";
-  } else if (str.length == 0) {
-    return "(empty string)";
+/// Truncates the given [string] after [truncAt] length
+/// [truncAt] = 26 (default)
+String formatAsTruncated(String string, [int truncAt]) {
+  if (string.length > (truncAt ?? 26)) {
+    return '${string.substring(0, (truncAt ?? 26))}[...]';
+  } else if (string.isEmpty) {
+    return '(empty string)';
   } else {
-    return str;
+    return string;
   }
 }
 
+///
 String formatAsHumanSize(num size) {
-  if (size < 1024) return "$size B";
-  if (size < 1024 * 1024) return "${_format(size/1024)} KB";
-  if (size < 1024 * 1024 * 1024) return "${_format(size/(1024*1024))} MB";
-  return "${_format(size/(1024*1024*1024))} GB";
+  if (size < 1024) return '$size B';
+  if (size < 1024 * 1024) return '${_format(size/1024)} KB';
+  if (size < 1024 * 1024 * 1024) return '${_format(size/(1024*1024))} MB';
+  return '${_format(size/(1024*1024*1024))} GB';
 }
 
+///
 String formatBytesAsHexString(Uint8List bytes) {
-  var result = new StringBuffer();
-  for (var i = 0; i < bytes.lengthInBytes; i++) {
-    var part = bytes[i];
+  final StringBuffer result = new StringBuffer();
+  for (int i = 0; i < bytes.lengthInBytes; i++) {
+    final int part = bytes[i];
     result.write('${part < 16 ? '0' : ''}${part.toRadixString(16)}');
   }
   return result.toString();
@@ -41,61 +36,55 @@ String formatBytesAsHexString(Uint8List bytes) {
 
 String _format(double val) {
   if (val.isInfinite) {
-    return "INF";
+    return 'INF';
   } else if (val.isNaN) {
-    return "NaN";
+    return 'NaN';
   } else {
-    return val.floor().toString() + "." + (100 * (val - val.toInt())).toInt().toString();
+    return '${val.floor().toString()}.${(100 * (val - val.toInt())).toInt().toString()}';
   }
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// Data ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
+///
 Uint8List createUint8ListFromString(String s) {
-  var ret = new Uint8List(s.length);
-  for (var i = 0; i < s.length; i++) {
+  final Uint8List ret = new Uint8List(s.length);
+  for (int i = 0; i < s.length; i++) {
     ret[i] = s.codeUnitAt(i);
   }
   return ret;
 }
 
+///
 Uint8List createUint8ListFromHexString(String hex) {
-  var result = new Uint8List(hex.length ~/ 2);
-  for (var i = 0; i < hex.length; i += 2) {
-    var num = hex.substring(i, i + 2);
-    var byte = int.parse(num, radix: 16);
+  final Uint8List result = new Uint8List(hex.length ~/ 2);
+  for (int i = 0; i < hex.length; i += 2) {
+    final String number = hex.substring(i, i + 2);
+    final int byte = int.parse(number, radix: 16);
     result[i ~/ 2] = byte;
   }
   return result;
 }
 
+///
 Uint8List createUint8ListFromSequentialNumbers(int len) {
-  var ret = new Uint8List(len);
-  for (var i = 0; i < len; i++) {
+  final Uint8List ret = new Uint8List(len);
+  for (int i = 0; i < len; i++) {
     ret[i] = i;
   }
   return ret;
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// Matchers ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-const isAllZeros = const _IsAllZeros();
-
-class _IsAllZeros extends Matcher {
-  const _IsAllZeros();
-
-  bool matches(Iterable<int> item, Map matchState) {
-    for (var i in item) {
-      if (i != 0) return false;
-    }
-    return true;
+/// Checks if runtimeType match for [value] and [t],
+/// if [allowNull] is `false` returns [value] if it's not null,
+/// throws `ArgumentError.notNull` otherwise.
+/// Specify [varName] for debugging.
+/// {WIP}
+dynamic getValIfmatch(dynamic value, Type t, {String varName, bool allowNull = false}) {
+  if (!allowNull && (null == value)) {
+    throw new ArgumentError.notNull('${varName ?? ''}');
+  }
+  if (value.runtimeType != t) {
+    throw new ArgumentError('${varName ?? ''} type mismatch');
   }
 
-  Description describe(Description description) => description.add('is all zeros');
-
-  Description describeMismatch(item, Description mismatchDescription, Map matchState, bool verbose) =>
-      mismatchDescription.add("is not all zeros");
+  return value;
 }
