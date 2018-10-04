@@ -6,39 +6,39 @@ class Bit {
     x = data;
   }
 
+  /// Get bit
+  int get x => _data;
+
   /// Set bit
   set x(int x) {
     x ??= 0;
     if (x == 0 || x == 1) {
       _data = x;
     } else {
-      throw new ArgumentError('A bit can only be either 0 or 1');
+      throw ArgumentError('A bit can only be either 0 or 1');
     }
   }
-
-  /// Get bit
-  int get x => _data;
 
   String toString() => _data.toString();
 }
 
 class Byte {
-  final List<Bit> _data = new List<Bit>.filled(8, new Bit());
+  final List<Bit> _data = List<Bit>.filled(8, Bit());
 
   Byte([int number]) {
     number ??= 0;
     if (number < 0 || number > 255) {
-      throw new ArgumentError('A byte can only be between 0 & 255');
+      throw ArgumentError('A byte can only be between 0 & 255');
     }
     if (number == 0) {
       return;
     }
     for (int i = _data.length - 1; i >= 0; i--) {
       if (number >= 2 ^ i) {
-        _data[i] = new Bit(1);
+        _data[i] = Bit(1);
         number -= 2 ^ i;
       } else {
-        _data[i] = new Bit();
+        _data[i] = Bit();
       }
     }
   }
@@ -51,5 +51,6 @@ class Byte {
     _data[index] = value;
   }
 
+  @override
   String toString() => _data.join();
 }
