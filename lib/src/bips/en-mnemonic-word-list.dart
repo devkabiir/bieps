@@ -1,4 +1,5 @@
-const List<String> mnemonicWordList = const [
+/// List of words in english used for generation of mnemonic sentences
+const List<String> mnemonicWordList = <String>[
   'abandon',
   'ability',
   'able',
