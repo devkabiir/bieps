@@ -1,0 +1,18 @@
+language: dart
+dart:
+# Install the latest stable release
+- stable
+# Install the latest dev release
+- dev
+
+dart_task:
+- dartanalyzer: --fatal-warnings --fatal-lints lib
+- dartfmt: true
+- test: --platform vm
+
+branches:
+  only: [master]
+
+cache:
+ directories:
+   - $HOME/.pub-cache
