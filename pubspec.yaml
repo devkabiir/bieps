@@ -2,7 +2,8 @@ name: bieps
 description: BIP/EIP implementations in dart
 version: 0.0.1
 author: devkabiir <dev@kabiir.me>
-homepage: https://github.com/kabiir/bieps
+homepage: https://github.com/devkabiir/bieps
+documentation:
 
 environment:
   sdk: '>=2.0.0 <3.0.0'
