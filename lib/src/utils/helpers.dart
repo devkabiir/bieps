@@ -4,36 +4,96 @@ library bieps.util.helperss;
 
 import 'dart:typed_data';
 
-/// Truncates the given [string] after [truncAt] length
-/// [truncAt] = 26 (default)
-String formatAsTruncated(String string, [int truncAt]) {
-  if (string.length > (truncAt ?? 26)) {
-    return '${string.substring(0, (truncAt ?? 26))}[...]';
-  } else if (string.isEmpty) {
-    return '(empty string)';
-  } else {
-    return string;
+/// Converts given string of [bits] to an integer (byte)
+int bitToByte(String bits) => int.parse(bits, radix: 2);
+
+/// Converts given list of [bytes] to a string of bits.
+String bytesToBits(Uint8List bytes) =>
+    bytes.map((int x) => x.toRadixString(2).padLeft(8, '0')).join();
+
+/// Coverts given [hex] string to `Uint8List`
+Uint8List createUint8ListFromHexString(String hex) {
+  final Uint8List result = Uint8List(hex.length ~/ 2);
+
+  for (int i = 0; i < hex.length; i += 2) {
+    final String number = hex.substring(i, i + 2);
+    final int byte = int.parse(number, radix: 16);
+
+    result[i ~/ 2] = byte;
   }
+
+  return result;
 }
 
-///
+/// Coverts given [string] to `Uint8List`
+Uint8List createUint8ListFromString(String string) {
+  final Uint8List ret = Uint8List(string.length);
+
+  for (int i = 0; i < string.length; i++) {
+    ret[i] = string.codeUnitAt(i);
+  }
+
+  return ret;
+}
+
+/// Creates `Uint8List` of [len] with incremental values of each element
+Uint8List createUint8ListOfSequentialNumbers(int len) {
+  final Uint8List ret = Uint8List(len);
+
+  for (int i = 0; i < len; i++) {
+    ret[i] = i;
+  }
+
+  return ret;
+}
+
+/// Coverts given [size] to human readable format returns size in
+/// `B`(bytes), `KB`(KiloBytes), `MB`(MegaBytes) and `GB`(GigaBytes)
 String formatAsHumanSize(num size) {
-  if (size < 1024) return '$size B';
-  if (size < 1024 * 1024) return '${_format(size/1024)} KB';
-  if (size < 1024 * 1024 * 1024) return '${_format(size/(1024*1024))} MB';
-  return '${_format(size/(1024*1024*1024))} GB';
+  if (size < 1024) {
+    return '$size B';
+  }
+
+  if (size < 1024 * 1024) {
+    return '${_format(size / 1024)} KB';
+  }
+
+  if (size < 1024 * 1024 * 1024) {
+    return '${_format(size / (1024 * 1024))} MB';
+  }
+
+  return '${_format(size / (1024 * 1024 * 1024))} GB';
 }
 
-///
+/// Truncates the given [string] after [truncAt] length and appends `[[...]]`
+/// Returns `(empty string)` for empty string
+/// Returns [string] if length < [truncAt]
+String formatAsTruncated(String string, [int truncAt = 26]) {
+  if (string.isEmpty) {
+    return '(empty string)';
+  }
+
+  if (string.length > truncAt) {
+    return '${string.substring(0, truncAt)}[...]';
+  }
+
+  return string;
+}
+
+/// Converts [bytes] to hexadecimal and returns it as string
 String formatBytesAsHexString(Uint8List bytes) {
-  final StringBuffer result = new StringBuffer();
+  final StringBuffer result = StringBuffer();
+
   for (int i = 0; i < bytes.lengthInBytes; i++) {
     final int part = bytes[i];
+
     result.write('${part < 16 ? '0' : ''}${part.toRadixString(16)}');
   }
+
   return result.toString();
 }
 
+/// Formats [val] to 3 decimal places and converts to string
 String _format(double val) {
   if (val.isInfinite) {
     return 'INF';
@@ -43,54 +103,3 @@ String _format(double val) {
     return '${val.floor().toString()}.${(100 * (val - val.toInt())).toInt().toString()}';
   }
 }
-
-///
-Uint8List createUint8ListFromString(String s) {
-  final Uint8List ret = new Uint8List(s.length);
-  for (int i = 0; i < s.length; i++) {
-    ret[i] = s.codeUnitAt(i);
-  }
-  return ret;
-}
-
-///
-Uint8List createUint8ListFromHexString(String hex) {
-  final Uint8List result = new Uint8List(hex.length ~/ 2);
-  for (int i = 0; i < hex.length; i += 2) {
-    final String number = hex.substring(i, i + 2);
-    final int byte = int.parse(number, radix: 16);
-    result[i ~/ 2] = byte;
-  }
-  return result;
-}
-
-///
-Uint8List createUint8ListFromSequentialNumbers(int len) {
-  final Uint8List ret = new Uint8List(len);
-  for (int i = 0; i < len; i++) {
-    ret[i] = i;
-  }
-  return ret;
-}
-
-/// Checks if runtimeType match for [value] and [t],
-/// if [allowNull] is `false` returns [value] if it's not null,
-/// throws `ArgumentError.notNull` otherwise.
-/// Specify [varName] for debugging.
-/// {WIP}
-dynamic getValIfmatch(dynamic value, Type t, {String varName, bool allowNull = false}) {
-  if (!allowNull && (null == value)) {
-    throw new ArgumentError.notNull('${varName ?? ''}');
-  }
-  if (value.runtimeType != t) {
-    throw new ArgumentError('${varName ?? ''} type mismatch');
-  }
-
-  return value;
-}
-
-/// Converts given [bytes] to a bits string.
-String bytesToBits(Uint8List bytes) => bytes.map((int x) => x.toRadixString(2).padLeft(8, '0')).join();
-
-/// Converts given string of [bits] to an integer
-int bitToByte(String bits) => int.parse(bits, radix: 2);
